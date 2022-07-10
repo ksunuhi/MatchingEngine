@@ -26,7 +26,7 @@ void check(const OrderEvent& event, OrderStatus_t status, int quantityDone) {
 	cout << "check "<< event.getClientId() << " ok "<<endl;
 }
 
-/** case of 1 limit sell order to match 3 limit buy orders***
+/** Case of limit price order matching***
  * step1
  * send 3 buy orders to engine
  *    order1 buy 1000@101
@@ -84,7 +84,7 @@ void testcase1() {
 	check(engine.getResultsOfLastOperation(order4),OrderStatus_t::cancelReject_e,5600);
 }
 
-/**
+/**Case of market and limit price order mix matching***
  * step1
  * send 3 buy orders to engine
  *    order1 sell 1000@101
@@ -149,6 +149,45 @@ void testcase2() {
 	engine.submitCancel(order6);
 }
 
+/**Order arrival Time priorities test
+ * step1
+ * send 2 buy orders to engine
+ *    order1 sell 1000@101
+ *    order2 sell 1000@101
+ * send 1 sell order to engine
+ *    order4 buy 200@101
+ * then it expectes
+ *    order1 - partical fill
+ *    order2 - no fill
+ *    order3 - full fill
+ *
+ */
+void testcase3() {
+	MatchingEngine& engine = MatchingEngine::getInstance();
+	int instrument = 6761;
+
+	//set 2 buy ordes
+	Order order1("order1", instrument,OrderSide_t::sell_e,101,1000);
+	Order order2("order2", instrument,OrderSide_t::sell_e,101,1000);
+
+	//1 sell to fill
+	Order order3("order3", instrument,OrderSide_t::buy_e,101,200);
+
+	engine.submitNew(order1);
+	engine.submitNew(order2);
+	engine.submitNew(order3);
+
+	//wait a bit, then check result
+	std::this_thread::sleep_for (std::chrono::seconds(5));
+
+	//check executions
+	check(engine.getResultsOfLastOperation(order1),OrderStatus_t::execution_e,200);
+	check(engine.getResultsOfLastOperation(order2),OrderStatus_t::newAck_e,0);
+	check(engine.getResultsOfLastOperation(order3),OrderStatus_t::execution_e,200);
+
+}
+
+
 /** performance test***
  * step1
  * send 10000 buy orders to engine
@@ -173,7 +212,7 @@ void sendLargeOder() {
 }
 
 
-void testcase3() {
+void testcase4() {
 	thread t1(sendLargeOder);
 	thread t2(sendLargeOder);
 	thread t3(sendLargeOder);
@@ -192,6 +231,9 @@ int main() {
 
 	cout << "run test case3" << endl;
 	testcase3();
+
+	cout << "run test case4" << endl;
+	testcase4();
 
 	return 0;
 }
