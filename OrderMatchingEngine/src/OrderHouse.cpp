@@ -114,6 +114,7 @@ OrderEvent OrderHouse::queryOrder(const string& exchangeId) {
 	myLocker.readWait();
 	auto itr = myOrderBook.find(exchangeId);
 	if(itr != myOrderBook.end() ) {
+		cout << "OrderHouse query order return for order " << exchangeId << endl;
 		OrderEvent event(itr->second.getClientId(),
 				          itr->second.getExchangeId(),
 						  itr->second.getStatus(),
@@ -121,7 +122,7 @@ OrderEvent OrderHouse::queryOrder(const string& exchangeId) {
 		myLocker.readDone();
 		return event;
 	} else {
-		cout << "OrderHouse query order fails for idstatus " << (int)itr->second.getStatus() << endl;
+		cout << "OrderHouse query order fails for order " << exchangeId << endl;
 		myLocker.readDone();
 		return OrderEvent("",exchangeId,OrderStatus_t::unknown_e,0);
 	}
